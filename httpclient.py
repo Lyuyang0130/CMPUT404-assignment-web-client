@@ -18,6 +18,8 @@
 # Write your own HTTP GET and POST
 # The point is to understand what you have to send and get experience with it
 
+#TODO: check the standered ouput format for get and post, especially post about the \r\n, or need the connection close or not
+#TODO: need to print the inf_send or not
 import sys
 import socket
 import re
@@ -41,13 +43,23 @@ class HTTPClient(object):
         return None
 
     def get_code(self, data):
-        return None
+        header  = data.split('\r\n\r\n')[0]
+        code = int(header.split()[1])
+        return code
+       
 
     def get_headers(self,data):
-        return None
+        #we use the \r\n\r\n to split the headers and body
+        headers = data.split('\r\n\r\n')[0]
+        return headers
+        
 
     def get_body(self, data):
-        return None
+        try:
+            body = data.split('\r\n\r\n')[1]
+            return body
+        except:
+            return ""
     
     def sendall(self, data):
         self.socket.sendall(data.encode('utf-8'))
@@ -67,14 +79,84 @@ class HTTPClient(object):
                 done = not part
         return buffer.decode('utf-8')
 
+    #ref:https://docs.python.org/3/library/urllib.parse.html
     def GET(self, url, args=None):
         code = 500
         body = ""
+        if (len(url)!= 0):
+            url_split = urllib.parse.urlparse(url)
+            host = url_split.hostname
+            port = url_split.port 
+            if port==None:
+                port = 80
+            self.connect(host,port)
+        
+            path = url_split.path
+            if path =='':
+                path = '/'
+
+            query = url_split.query
+            if (query != ''):
+                path += "?" + url_split.query
+            
+            inf_send = ("GET %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n" % (path, host))
+            print("************************Output print************************")
+            print(inf_send)
+            self.sendall(inf_send)
+            server_re = self.recvall(self.socket)
+
+            code = self.get_code(server_re)
+            body = self.get_body(server_re)
+            self.close()
+
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
         code = 500
         body = ""
+        if (len(url)!= 0):
+            url_split = urllib.parse.urlparse(url)
+            host = url_split.hostname
+            port = url_split.port 
+            if port==None:
+                port = 80
+            self.connect(host,port)
+        
+            path = url_split.path
+            if path =='':
+                path = '/'
+
+            query = url_split.query
+            if (query != ''):
+                path += "?" + url_split.query
+
+            inf_send = "POST %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n" % (path, host)
+    
+            if args==None: #deal without args
+                inf_send += ("Content-Length: 0\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n")
+            else:
+                body_str = ""
+                for key_p in args.keys():
+                    body_str += key_p + "=" + args[key_p] + "&"
+                #all but the last & since end of key value pair 
+                body_str = body_str[0:len(body_str)-1]
+                body_len = len(body_str) 
+
+                #deal with the body
+                inf_send += ("Content-Length: %d\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n" % body_len )
+                inf_send += body_str
+
+            print("************************Output print************************")
+            print(inf_send)
+            self.sendall(inf_send)
+            server_re = self.recvall(self.socket)
+
+            code = self.get_code(server_re)
+            body = self.get_body(server_re)
+            self.close()
+
+            
+
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
