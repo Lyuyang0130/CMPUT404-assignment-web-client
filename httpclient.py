@@ -18,8 +18,6 @@
 # Write your own HTTP GET and POST
 # The point is to understand what you have to send and get experience with it
 
-#TODO: check the standered ouput format for get and post, especially post about the \r\n, or need the connection close or not
-#TODO: need to print the inf_send or not
 import sys
 import socket
 import re
@@ -100,13 +98,16 @@ class HTTPClient(object):
                 path += "?" + url_split.query
             
             inf_send = ("GET %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n" % (path, host))
-            print("************************Output print************************")
-            print(inf_send)
+            
+            
             self.sendall(inf_send)
             server_re = self.recvall(self.socket)
 
             code = self.get_code(server_re)
             body = self.get_body(server_re)
+            print("Status code:",code)
+            print("Body:")
+            print(body)
             self.close()
 
         return HTTPResponse(code, body)
@@ -146,13 +147,15 @@ class HTTPClient(object):
                 inf_send += ("Content-Length: %d\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n" % body_len )
                 inf_send += body_str
 
-            print("************************Output print************************")
-            print(inf_send)
+        
             self.sendall(inf_send)
             server_re = self.recvall(self.socket)
 
             code = self.get_code(server_re)
             body = self.get_body(server_re)
+            print("Status code:",code)
+            print("Body:")
+            print(body)
             self.close()
 
             
