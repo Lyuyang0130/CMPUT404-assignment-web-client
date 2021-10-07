@@ -103,8 +103,10 @@ class HTTPClient(object):
             self.sendall(inf_send)
             server_re = self.recvall(self.socket)
 
+            header = self.get_headers(server_re)
             code = self.get_code(server_re)
             body = self.get_body(server_re)
+            print("Header:",header)
             print("Status code:",code)
             print("Body:")
             print(body)
@@ -131,28 +133,27 @@ class HTTPClient(object):
             if (query != ''):
                 path += "?" + url_split.query
 
-            inf_send = "POST %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n" % (path, host)
+            inf_send = "POST %s HTTP/1.1\r\nHost: %s\r\n" % (path, host)
     
             if args==None: #deal without args
-                inf_send += ("Content-Length: 0\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n")
+                body_str = urllib.parse.urlencode('')
+                inf_send += ("Content-Type: application/x-www-form-urlencoded\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
             else:
-                body_str = ""
-                for key_p in args.keys():
-                    body_str += key_p + "=" + args[key_p] + "&"
-                #all but the last & since end of key value pair 
-                body_str = body_str[0:len(body_str)-1]
+                body_str = urllib.parse.urlencode(args)
                 body_len = len(body_str) 
 
                 #deal with the body
-                inf_send += ("Content-Length: %d\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n" % body_len )
+                inf_send += ("Content-Type: application/x-www-form-urlencoded\r\nContent-Length: %d\r\nConnection: close\r\n\r\n" % body_len )
                 inf_send += body_str
 
         
             self.sendall(inf_send)
             server_re = self.recvall(self.socket)
 
+            header = self.get_headers(server_re)
             code = self.get_code(server_re)
             body = self.get_body(server_re)
+            print("Header:",header)
             print("Status code:",code)
             print("Body:")
             print(body)
